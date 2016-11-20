@@ -63,28 +63,24 @@ void grab (int speed)
 task autonomous()
 {
 
-	grab(127);
+	grab(127);//clutch preload
 	wait1Msec(1000);
 	grab(0);
-	wait1Msec(10);
-	arm(127);
-	wait1Msec(500);
-	arm(0);
-	wait1Msec(10);
-	drive(127);
+	arm(127);//lift arm
 	wait1Msec(750);
-	rotate(127);
+	arm(0);
+	drive(127);//drive short forward
+	wait1Msec(750);
+	rotate(127);//rotate around
 	wait1Msec(740);
 	rotate(0);
-	wait1Msec(10);
-	drive(-127);
+	drive(-127);//drive backwards
 	wait1Msec(500);
 	drive(0);
-	arm(127);
+	arm(127);//raise arm full height
 	wait1Msec(1500);
 	arm(0);
-	wait1Msec(10);
-	grab(-127);
+	grab(-127);//release star
 	wait1Msec(1200);
 	grab(0);
 	wait1Msec(10);
