@@ -1,5 +1,5 @@
-#pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
 #pragma config(I2C_Usage, I2C1, i2cSensors)
+#pragma config(Sensor, in1,    PEStatus,       sensorAnalog)
 #pragma config(Sensor, I2C_1,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Sensor, I2C_2,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Sensor, I2C_3,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign )
@@ -24,10 +24,24 @@
 /////////////////////////////////////////
 void pre_auton()
 {
+	bLCDBacklight = true;                                    // Turn on LCD Backlight
+	string mainBattery, PEBattery;
 	bStopTasksBetweenModes = true;
 	bDisplayCompetitionStatusOnLcd = false;
 	resetMotorEncoder(armL2);
 	resetMotorEncoder(armR2);
+	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
+	clearLCDLine(1);                                            // Clear line 2 (1) of the LCD
+
+	//Display the Primary Robot battery voltage
+	displayLCDString(0, 0, "Primary: ");
+	sprintf(mainBattery, "%1.2f%c", nImmediateBatteryLevel/1000.0,'V'); //Build the value to be displayed
+	displayNextLCDString(mainBattery);
+
+	//Display the Backup battery voltage
+	displayLCDString(1, 0, "Secondary: ");
+	sprintf(PEBattery, "%1.2f%c", PEStatus/70, 'V');    //Build the value to be displayed
+	displayNextLCDString(PEBattery);
 	// All activities that occur before the competition starts
 	// Example: clearing encoders, setting servo positions, ...
 }
@@ -61,7 +75,7 @@ task autonomous()
 	slaveMotor(armL2, armL3);
 	slaveMotor(armR1, armR2);
 	slaveMotor(armR2, armR3);
-//change this to encoder powered
+	//change this to encoder powered
 	grab(127);//clutch preload
 	wait1Msec(750);
 	grab(0);
@@ -117,7 +131,7 @@ task usercontrol()
 		{														//
 			arm(0);										//
 		}
-			//
+		//
 		//////////////////////////////
 		//Grabber Control/////////////
 		if (vexRT[Btn8U] == 1)			//
@@ -133,6 +147,8 @@ task usercontrol()
 			grab(0);									//
 		}														//
 		//////////////////////////////
+		//LCD Display/////////////////
+
 		//Deadband////////////////////
 		int deadBand = 10;
 		if(x1 > deadBand || x1 < -deadBand)
