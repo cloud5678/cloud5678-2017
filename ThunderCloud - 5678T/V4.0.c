@@ -23,6 +23,17 @@
 #pragma competitionControl(Competition)//
 #include "Vex_Competition_Includes.c"////
 /////////////////////////////////////////
+bool testI2C()
+{
+	if(nI2CStatus == 0 || nI2CStatus == 6)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
 void pre_auton()
 {
 	bLCDBacklight = true;                                    // Turn on LCD Backlight
@@ -31,20 +42,32 @@ void pre_auton()
 	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
 	clearLCDLine(1);                                            // Clear line 2 (1) of the LCD
 	string mainBattery;
-	if(nImmediateBatteryLevel/1000.0>7)
+	bool getI2C = testI2C();
+	if(nImmediateBatteryLevel/1000.0>7 && getI2C == true)
 	{
-		displayLCDString(0, 0, "Systems GREEN");
+		displayLCDString(0, 0, "Systems: GREEN");
 		displayLCDString(1, 0, "Ready to Begin!");
+	}
+	else if(nImmediateBatteryLevel/1000.0>7 && getI2C == false)
+	{
+		displayLCDCenteredString(0, "I2C Fault!!!");
+		displayLCDCenteredString(1, "Check Wires!!!");
+	}
+	else if(getI2C == false && nImmediateBatteryLevel/1000.0<7)
+	{
+		displayLCDCenteredString(0, "I2C Fault!!!");
+		displayLCDCenteredString(1, "Battery Fault!!!");
 	}
 	else
 	{
-		displayLCDString(0, 0, "REPLACE BATT!!!");
+		displayLCDCenteredString(0, "REPLACE BATT!!!");
 		displayLCDString(1, 0, "Main V: ");
 		sprintf(mainBattery, "%1.2f%c", nImmediateBatteryLevel/1000.0,'V');
 		displayNextLCDString(mainBattery);
 	}
 }
-//auto methods
+//auton methods//////////////////////////
+/////////////////////////////////////////
 void drive(int speed, int forHowLong)
 {
 	do
@@ -53,8 +76,9 @@ void drive(int speed, int forHowLong)
 		setMotorTarget( left, forHowLong, speed, false );
 	}
 	while(!getMotorTargetCompleted(left) && !getMotorTargetCompleted(right));
-		motor[left] = motor[right] = 0;
+	motor[left] = motor[right] = 0;
 }
+/////////////////////////////////////////
 void rotateR (int speed, int forHowLong)
 {
 	do
@@ -63,8 +87,9 @@ void rotateR (int speed, int forHowLong)
 		setMotorTarget( left, forHowLong, speed, false );
 	}
 	while(!getMotorTargetCompleted(left) && !getMotorTargetCompleted(right));
-		motor[left] = motor[right] = 0;
+	motor[left] = motor[right] = 0;
 }
+/////////////////////////////////////////
 void rotateL (int speed, int forHowLong)
 {
 	do
@@ -73,9 +98,84 @@ void rotateL (int speed, int forHowLong)
 		setMotorTarget( left, -forHowLong, -speed, false );
 	}
 	while(!getMotorTargetCompleted(left) && !getMotorTargetCompleted(right));
-		motor[left] = motor[right] = 0;
+	motor[left] = motor[right] = 0;
 }
-
+/////////////////////////////////////////
+void resetIME ()
+{
+	resetMotorEncoder(right);
+	resetMotorEncoder(left);
+	resetMotorEncoder(grabL);
+	resetMotorEncoder(armR3);
+	resetMotorEncoder(armL3);
+	clearTimer(T1);
+}
+/////////////////////////////////////////
+void armAuto (int speed, int forHowLong)
+{
+	do
+	{
+		setMotorTarget( armR3, forHowLong, speed, false );
+		setMotorTarget( armL3, forHowLong, speed, false );
+	}
+	while(!getMotorTargetCompleted(armR3) && !getMotorTargetCompleted(armL3));
+	motor[armR3] = motor[armL3] = 0;
+}
+/////////////////////////////////////////
+void grabAuto (int speed, int forHowLong)
+{
+	do
+	{
+		motor [grabL] = motor[grabR] = speed;
+	}
+	while(time1[T1]<= forHowLong);
+	motor [grabL] = motor[grabR] = 0;
+}
+////////////////////////////////////////
+//autonomous
+task autonomous()
+{
+	slaveMotor(armL2, armL3);
+	slaveMotor(armL1, armL2);
+	slaveMotor(armR1, armR3);
+	slaveMotor(armR2, armR1);
+	grabAuto(127, 1250);//clutch preload
+	resetIME();
+	drive(127, 1000); //drive forward
+	resetIME();
+	rotateL(127, 1000);//turn 180 degrees
+	resetIME();
+	drive(-127, -850);//reverse to wall
+	resetIME();
+	armAuto(127, 250);//lift arm
+	resetIME();
+	grabAuto(-127, 1500);//release preload
+	resetIME();
+	armAuto(-127, -800);//arm back down
+	resetIME();
+	rotateR(127, 400);//rotate towards cube
+	resetIME();
+	drive(127,500);//drive towards cube
+	resetIME();
+	grabAuto(127, 1250);//clutch cube
+	resetIME();
+	rotateL(127, 400);//rotate towards fence
+	resetIME();
+	drive(-127, -850);//backup
+	resetIME();
+	armAuto(127,250);//raise arm
+	resetIME();
+	grabAuto(-127, 1250);//dump cube
+	resetIME();
+	armAuto(-127, -800);//lower arm
+	resetIME();
+}
+//User Control Methods////////////////////////
+void grab(int speed)
+{
+	motor [grabL] = motor[grabR] = speed;
+}
+/////////////////////////////////////////
 void arm (int speed)//fallback simple method
 {
 	motor [armL1] = speed;
@@ -85,27 +185,7 @@ void arm (int speed)//fallback simple method
 	motor [armR2] = speed;
 	motor [armR3] = speed;
 }
-void grab (int speed)
-{
-	motor [grabL] = motor[grabR] = speed;
-}
-////////////////////////////////////////
-//autonomous
-task autonomous()
-{
-	slaveMotor(armL3, armL2);
-	slaveMotor(armL2, armL1);
-	slaveMotor(armR3, armR2);
-	slaveMotor(armR2, armR1);
-	grab(127);//clutch preload
-	wait1Msec(1250);
-	grab(0);
-	drive(127, 0); //drive forward, get encoder count
-	wait1Msec(1000);
-	drive(0, 0);
-	wait1Msec(10);
-
-}
+/////////////////////////////////////////
 task usercontrol()
 {
 	while (true)
@@ -116,7 +196,7 @@ task usercontrol()
 		float y2 = vexRT[Ch2];
 		//Left Joystick Arcade Drive//
 		motor [left] = y1 + x1;     //
-		motor [right]  = y1 - x1;   //
+		motor [right] = y1 - x1;    //
 		//////////////////////////////
 		//Arm Control/////////////////
 		if (vexRT[Btn6U] == 1)			//
