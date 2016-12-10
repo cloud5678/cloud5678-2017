@@ -72,10 +72,10 @@ void drive(int speed, int forHowLong)
 {
 	do
 	{
-		moveMotorTarget( right, forHowLong, speed, false );
-		moveMotorTarget( left, forHowLong, speed, false );
+		motor[left]=speed;
+		motor[right]=speed;
 	}
-	while(!getMotorTargetCompleted(left) && !getMotorTargetCompleted(right));
+	while(getMotorEncoder(left)<forHowLong && getMotorEncoder(right)<forHowLong);
 	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////
@@ -83,10 +83,10 @@ void rotateR (int speed, int forHowLong)
 {
 	do
 	{
-		moveMotorTarget( right, forHowLong, -speed, false );
-		moveMotorTarget( left, forHowLong, speed, false );
+		motor[left]=speed;
+		motor[right]=-speed;
 	}
-	while(!getMotorTargetCompleted(left) && !getMotorTargetCompleted(right));
+	while(getMotorEncoder(left)<forHowLong && getMotorEncoder(right)<forHowLong);
 	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////
@@ -94,10 +94,10 @@ void rotateL (int speed, int forHowLong)
 {
 	do
 	{
-		moveMotorTarget( right, forHowLong, speed, false );
-		moveMotorTarget( left, forHowLong, -speed, false );
+		motor[left]=-speed;
+		motor[right]=speed;
 	}
-	while(!getMotorTargetCompleted(left) && !getMotorTargetCompleted(right));
+	while(getMotorEncoder(left)<forHowLong && getMotorEncoder(right)<forHowLong);
 	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////
@@ -115,11 +115,15 @@ void armAuto (int speed, int forHowLong)
 {
 	do
 	{
-		moveMotorTarget( armR3, forHowLong, speed, false );
-		moveMotorTarget( armL3, forHowLong, speed, false );
+		motor [armL1] = speed;
+		motor [armL2] = speed;
+		motor [armL3] = speed;
+		motor [armR1] = speed;
+		motor [armR2] = speed;
+		motor [armR3] = speed;
 	}
-	while(!getMotorTargetCompleted(armR3) && !getMotorTargetCompleted(armL3));
-	motor[armR3] = motor[armL3] = 0;
+	while(getMotorEncoder(armL3)<forHowLong && getMotorEncoder(armR3)<forHowLong);
+	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////
 void grabAuto (int speed, int forHowLong)
