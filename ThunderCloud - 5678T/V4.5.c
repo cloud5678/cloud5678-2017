@@ -68,9 +68,10 @@ void pre_auton()
 }
 //auton methods//////////////////////////
 /////////////////////////////////////////
+float mult = 156.8; //changes inches to ticks, motors should be torque, if not this will be off, test this
 void drive(int speed, float forHowLong)
 {
-	float distance = forHowLong*156.8;
+	float distance = forHowLong*mult;
 	do
 	{
 		motor[left]=speed;
@@ -82,23 +83,25 @@ void drive(int speed, float forHowLong)
 /////////////////////////////////////////
 void rotateR (int speed, int forHowLong)
 {
+	float distance = forHowLong*mult;
 	do
 	{
 		motor[left]=speed;
 		motor[right]=-speed;
 	}
-	while(getMotorEncoder(left)<forHowLong && getMotorEncoder(right)>-forHowLong);
+	while(getMotorEncoder(left) < distance && getMotorEncoder(right) > -distance);
 	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////
 void rotateL (int speed, int forHowLong)
 {
+	float distance = forHowLong*mult;
 	do
 	{
 		motor[left]=-speed;
 		motor[right]=speed;
 	}
-	while(getMotorEncoder(left)>-forHowLong && getMotorEncoder(right)<forHowLong);
+	while(getMotorEncoder(left) > -distance && getMotorEncoder(right) < distance);
 	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////

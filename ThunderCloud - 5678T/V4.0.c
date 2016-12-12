@@ -75,7 +75,7 @@ void drive(int speed, int forHowLong)
 		moveMotorTarget( right, forHowLong, speed, false );
 		moveMotorTarget( left, forHowLong, speed, false );
 	}
-	while(!getMotorTargetCompleted(left) && !getMotorTargetCompleted(right));
+	while(getMotorTargetCompleted(left) == false && getMotorTargetCompleted(right) == false);
 	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////
@@ -142,8 +142,7 @@ task autonomous()
 	resetIME();
 	grabAuto(127, 1250);//clutch preload
 	resetIME();
-	sleep(10);
-	drive(127, 1000); //drive forward
+	drive(127, 100); //drive forward
 	resetIME();
 	/*rotateL(127, 1000);//turn 180 degrees
 	resetIME();
