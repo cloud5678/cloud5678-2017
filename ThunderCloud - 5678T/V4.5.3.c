@@ -22,6 +22,7 @@
 #pragma platform(VEX2)///////////////////
 #pragma competitionControl(Competition)//
 #include "Vex_Competition_Includes.c"////
+#include "ImeLib.c"//////////////////////
 /////////////////////////////////////////
 bool testI2C()
 {
@@ -34,7 +35,7 @@ bool testI2C()
 		return true;
 	}
 }
-
+bool getI2C = testI2C();
 void pre_auton()
 {
 	bLCDBacklight = true;                                    // Turn on LCD Backlight
@@ -43,7 +44,6 @@ void pre_auton()
 	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
 	clearLCDLine(1);                                            // Clear line 2 (1) of the LCD
 	string mainBattery, I2C_ErrorCode;
-	bool getI2C = testI2C();
 	if(nImmediateBatteryLevel/1000.0>7 && getI2C == true)
 	{
 		displayLCDString(0, 0, "Systems: GREEN");
@@ -202,89 +202,100 @@ task usercontrol()
 {
 	while (true)
 	{
-		float x1 = vexRT[Ch4];
-		float y1 = vexRT[Ch3];
-		float x2 = vexRT[Ch1];
-		float y2 = vexRT[Ch2];
-		//Left Joystick Arcade Drive//
-		motor [left] = y1 + x1;     //
-		motor [right] = y2 - x2;    //
-		//////////////////////////////
-		//Arm Control/////////////////
-		if (vexRT[Btn6U] == 1)			//
-		{														//
-			arm(127);									//
-		}														//
-		else if (vexRT[Btn6D] == 1 )//
-		{														//
-			arm(-127);								//
-		}														//
-		else												//
-		{														//
-			arm(0);										//
-		}														//
-		//////////////////////////////
-		//Grabber Control/////////////
-		if (vexRT[Btn8U] == 1)			//
-		{														//
-			grab(127);								//
-		}														//
-		else if (vexRT[Btn8D] == 1) //
-		{														//
-			grab(-127);								//
-		}														//
-		else												//
-		{														//
-			grab(0);									//
-		}														//
-		//////////////////////////////
-		//LCD Display/////////////////
-		string mainBattery, PEBattery;
-		clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
-		clearLCDLine(1);                                            // Clear line 2 (1) of the LCD
+		if(getI2C == true)
+		{
+			IMESetEncoder(port2, 0);
+			IMESetEncoder(port3, 0);
+			IMESetEncoder(port6, 0);
+			IMESetEncoder(port7, 0);
+			wait1Msec(500);//wait .5 sec for IME system to reset
+		}
+		else
+		{
+			float x1 = vexRT[Ch4];
+			float y1 = vexRT[Ch3];
+			float x2 = vexRT[Ch1];
+			float y2 = vexRT[Ch2];
+			//Left Joystick Arcade Drive//
+			motor [left] = y1 + x1;     //
+			motor [right] = y2 - x2;    //
+			//////////////////////////////
+			//Arm Control/////////////////
+			if (vexRT[Btn6U] == 1)			//
+			{														//
+				arm(127);									//
+			}														//
+			else if (vexRT[Btn6D] == 1 )//
+			{														//
+				arm(-127);								//
+			}														//
+			else												//
+			{														//
+				arm(0);										//
+			}														//
+			//////////////////////////////
+			//Grabber Control/////////////
+			if (vexRT[Btn8U] == 1)			//
+			{														//
+				grab(127);								//
+			}														//
+			else if (vexRT[Btn8D] == 1) //
+			{														//
+				grab(-127);								//
+			}														//
+			else												//
+			{														//
+				grab(0);									//
+			}														//
+			//////////////////////////////
+			//LCD Display/////////////////
+			string mainBattery, PEBattery;
+			clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
+			clearLCDLine(1);                                            // Clear line 2 (1) of the LCD
 
-		//Display the Primary Robot battery voltage
-		displayLCDString(0, 0, "Primary: ");
-		sprintf(mainBattery, "%1.2f%c", nImmediateBatteryLevel/1000.0,'V');
-		displayNextLCDString(mainBattery);
+			//Display the Primary Robot battery voltage
+			displayLCDString(0, 0, "Primary: ");
+			sprintf(mainBattery, "%1.2f%c", nImmediateBatteryLevel/1000.0,'V');
+			displayNextLCDString(mainBattery);
 
-		//Display the Backup battery voltage
-		displayLCDString(1, 0, "Count: ");
-		sprintf(PEBattery, "%1.2f%c", BackupBatteryLevel/1000.0, 'V');
-		displayNextLCDString(PEBattery);
-		//Deadband////////////////////
-		int deadBand = 10;
-		if(x1 > deadBand || x1 < -deadBand)
-		{
-			x1 = x1;
-		}
-		else
-		{
-			x1 = 0;
-		}
-		if(y1 > deadBand || y1 < -deadBand)
-		{
-			y1 = y1;
-		}
-		else
-		{
-			y1 = 0;
-		}
-		if(x2 > deadBand || x2 < -deadBand)
-		{
-			x2 = x2;
-		}
-		else
-		{
-			x2 = 0;
-		}
-		if(y2 > deadBand || y2 < -deadBand)
-		{
-			y2 = y2;
-		}
-		else
-		{
-			y2 = 0;
+			//Display the Backup battery voltage
+			displayLCDString(1, 0, "Count: ");
+			sprintf(PEBattery, "%1.2f%c", BackupBatteryLevel/1000.0, 'V');
+			displayNextLCDString(PEBattery);
+			//Deadband////////////////////
+			int deadBand = 10;
+			if(x1 > deadBand || x1 < -deadBand)
+			{
+				x1 = x1;
+			}
+			else
+			{
+				x1 = 0;
+			}
+			if(y1 > deadBand || y1 < -deadBand)
+			{
+				y1 = y1;
+			}
+			else
+			{
+				y1 = 0;
+			}
+			if(x2 > deadBand || x2 < -deadBand)
+			{
+				x2 = x2;
+			}
+			else
+			{
+				x2 = 0;
+			}
+			if(y2 > deadBand || y2 < -deadBand)
+			{
+				y2 = y2;
+			}
+			else
+			{
+				y2 = 0;
+			}
 		}
 	}
 }

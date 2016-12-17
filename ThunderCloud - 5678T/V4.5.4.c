@@ -1,5 +1,6 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
-#pragma config(Sensor, dgtl1,  PELevel,        sensorDigitalIn)
+#pragma config(Sensor, dgtl1,  stopBtn,        sensorTouch)
+#pragma config(Sensor, dgtl2,  PELevel,        sensorDigitalIn)
 #pragma config(Sensor, I2C_1,  leftE,          sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Sensor, I2C_2,  lArmE,          sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Sensor, I2C_3,  rArmE,          sensorQuadEncoderOnI2CPort,    , AutoAssign )
@@ -22,6 +23,7 @@
 #pragma platform(VEX2)///////////////////
 #pragma competitionControl(Competition)//
 #include "Vex_Competition_Includes.c"////
+#include "ImeLib.c"//////////////////////
 /////////////////////////////////////////
 bool testI2C()
 {
@@ -34,7 +36,7 @@ bool testI2C()
 		return true;
 	}
 }
-
+bool getI2C = testI2C();
 void pre_auton()
 {
 	bLCDBacklight = true;                                    // Turn on LCD Backlight
@@ -43,7 +45,6 @@ void pre_auton()
 	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
 	clearLCDLine(1);                                            // Clear line 2 (1) of the LCD
 	string mainBattery, I2C_ErrorCode;
-	bool getI2C = testI2C();
 	if(nImmediateBatteryLevel/1000.0>7 && getI2C == true)
 	{
 		displayLCDString(0, 0, "Systems: GREEN");
@@ -71,7 +72,7 @@ void pre_auton()
 }
 //auton methods//////////////////////////
 /////////////////////////////////////////
-float mult = 156.8; //changes inches to ticks, motors should be torque, if not this will be off, test this
+float mult = 98; //changes inches to ticks, motors are in speed
 void drive(int speed, float forHowLong)
 {
 	float distance = forHowLong*mult;
@@ -83,8 +84,19 @@ void drive(int speed, float forHowLong)
 	while(getMotorEncoder(left)< distance && getMotorEncoder(right)<distance);
 	motor[left] = motor[right] = 0;
 }
+void reverse(int speed, float forHowLong)
+{
+	float distance = forHowLong*mult;
+	do
+	{
+		motor[left]=speed;
+		motor[right]=speed;
+	}
+	while(getMotorEncoder(left)> distance && getMotorEncoder(right)>distance);
+	motor[left] = motor[right] = 0;
+}
 /////////////////////////////////////////
-void rotateR (int speed, int forHowLong)
+void rotateR (int speed, float forHowLong)
 {
 	float distance = forHowLong*mult;
 	do
@@ -96,7 +108,7 @@ void rotateR (int speed, int forHowLong)
 	motor[left] = motor[right] = 0;
 }
 /////////////////////////////////////////
-void rotateL (int speed, int forHowLong)
+void rotateL (int speed, float forHowLong)
 {
 	float distance = forHowLong*mult;
 	do
@@ -132,6 +144,20 @@ void armAuto (int speed, int forHowLong)
 	while(getMotorEncoder(armL3)<forHowLong && getMotorEncoder(armR3)<forHowLong);
 	motor[left] = motor[right] = 0;
 }
+void armDown (int speed, int forHowLong)
+{
+	do
+	{
+		motor [armL1] = speed;
+		motor [armL2] = speed;
+		motor [armL3] = speed;
+		motor [armR1] = speed;
+		motor [armR2] = speed;
+		motor [armR3] = speed;
+	}
+	while(SensorValue(stopBtn) == 0);
+	motor[left] = motor[right] = 0;
+}
 /////////////////////////////////////////
 void grabAuto (int speed, int forHowLong)
 {
@@ -151,35 +177,43 @@ task autonomous()
 	slaveMotor(armR1, armR3);
 	slaveMotor(armR2, armR1);
 	resetIME();
-	grabAuto(127, 1250);//clutch preload
+	/*grabAuto(127, 1250);//clutch preload TEST THIS STUFF TOMMOROW
 	resetIME();
-	drive(127, 1000); //drive forward
+	drive(127, 7); //drive forward
 	resetIME();
-	rotateL(127, 1000);//turn 180 degrees
+	rotateL(127, 8);//turn 180 degrees
 	resetIME();
-	drive(-127, -850);//reverse to wall
+	reverse(-127, -5);//reverse to wall
 	resetIME();
-	armAuto(127, 250);//lift arm
+	armAuto(127, 150);//lift arm
 	resetIME();
 	grabAuto(-127, 1500);//release preload
 	resetIME();
-	armAuto(-127, -800);//arm back down
+	grabAuto(127, 1500);
 	resetIME();
-	rotateR(127, 400);//rotate towards cube
+	armDown(-127, -150);//arm back down
+	resetIME();*/
+	drive(127, 2);
 	resetIME();
-	drive(127,500);//drive towards cube
+	grabAuto(-127, 1000);
+	rotateL(127, 4);//rotate towards cube
 	resetIME();
-	grabAuto(127, 1250);//clutch cube
+	drive(127,3);//drive towards cube
 	resetIME();
-	rotateL(127, 400);//rotate towards fence
+	grabAuto(127, 1000);//clutch cube
+	rotateR(127, 4);//rotate towards fence
 	resetIME();
-	drive(-127, -850);//backup
+	grabAuto(127, 750);//clutch cube
+	reverse(-127, -5);//backup
 	resetIME();
-	armAuto(127,250);//raise arm
+	grabAuto(127, 1000);//clutch cube
+	armAuto(127,150);//raise arm
 	resetIME();
 	grabAuto(-127, 1250);//dump cube
 	resetIME();
-	armAuto(-127, -800);//lower arm
+	grabAuto(127, 1250);
+	resetIME();
+	armDown(-127, -400);//lower arm
 	resetIME();
 }
 //User Control Methods////////////////////////
@@ -200,6 +234,11 @@ void arm (int speed)//fallback simple method
 /////////////////////////////////////////
 task usercontrol()
 {
+	IMESetEncoder(port2, 0);
+	IMESetEncoder(port3, 0);
+	IMESetEncoder(port6, 0);
+	IMESetEncoder(port7, 0);
+	wait1Msec(500);//wait .5 sec for IME system to reset
 	while (true)
 	{
 		float x1 = vexRT[Ch4];
@@ -208,14 +247,14 @@ task usercontrol()
 		float y2 = vexRT[Ch2];
 		//Left Joystick Arcade Drive//
 		motor [left] = y1 + x1;     //
-		motor [right] = y2 - x2;    //
+		motor [right] = y1 - x1;    //
 		//////////////////////////////
 		//Arm Control/////////////////
 		if (vexRT[Btn6U] == 1)			//
 		{														//
 			arm(127);									//
 		}														//
-		else if (vexRT[Btn6D] == 1 )//
+		else if (vexRT[Btn6D] == 1 && SensorValue(stopBtn) == 0)//
 		{														//
 			arm(-127);								//
 		}														//
